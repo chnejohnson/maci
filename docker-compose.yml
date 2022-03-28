@@ -1,0 +1,15 @@
+version: '3.6'
+
+services:
+  maci:
+    tty: true
+    image: maci
+    volumes:
+      - ./cli/zkeys:/root/maci/cli/zkeys
+      - ./cli/ts:/root/maci/cli/ts
+      - ./circuits/circom:/root/maci/circuits/circom
+      - ./contracts/contracts:/root/maci/contracts/contracts
+      - ./contracts/ts:/root/maci/contracts/ts
+      - ./core/ts:/root/maci/core/ts
+      - ./crypto/ts:/root/maci/crypto/ts
+      - ./domainobjs/ts:/root/maci/domainobjs/ts
