@@ -150,6 +150,9 @@ contract Poll is
 
     uint256 internal numMessages;
 
+    // A mapping of stateIndex to voiceCreditBalance
+    mapping(uint256 => uint256) public voiceCreditBalance;
+
     function numSignUpsAndMessages() public view returns (uint256, uint256) {
         uint numSignUps = extContracts.maci.numSignUps();
         return (numSignUps, numMessages);
@@ -224,6 +227,35 @@ contract Poll is
         return secondsPassed > duration;
     }
 
+    function getVoiceCredits(bytes memory _voiceCreditProxyData) public view returns (uint256) {
+        uint256 voiceCreditBalance = extContracts.maci.initialVoiceCreditProxy.getVoiceCredits(
+            msg.sender,
+            _voiceCreditProxyData
+        );
+        return voiceCreditBalance;
+    }
+
+    function setVoiceCredits(bytes memory _voiceCreditProxyData) public {
+        uint256 secondsPassed = block.timestamp - deployTime;
+        require(
+            secondsPassed <= duration,
+            ERROR_VOTING_PERIOD_PASSED
+        );
+        require(extContracts.maci.stateIndexes[msg.sender] > 0, "Poll: Invalid signer address");
+          // Get the user's voice credit balance.
+        uint256 voiceCreditBalance = getVoiceCredits(_voiceCreditProxyData);
+
+        // The limit on voice credits is 2 ^ 32 which is hardcoded into the
+        // MessageValidator circuit, specifically at check that there are
+        // sufficient voice credits (using GreaterEqThan(32)).
+        // TODO: perhaps increase this to 2 ^ 50 = 1125899906842624?
+        require(
+            voiceCreditBalance <= 4294967296,
+            "Poll: too many voice credits"
+        );
+        uint256 stateIndex = extContracts.maci.stateIndexes[msg.sender];
+        voiceCreditBalance[stateIndex] = voiceCreditBalance;
+    }
     /*
      * Allows anyone to publish a message (an encrypted command and signature).
      * This function also enqueues the message.

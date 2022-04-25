@@ -59,6 +59,9 @@ contract MACI is IMACI, DomainObjs, Params, SnarkCommon, Ownable {
     // The number of signups
     uint256 public override numSignUps;
 
+    // A mapping of signer's address to state index
+    mapping (address => uint256) public stateIndexes;
+
     // A mapping of block timestamps to the number of state leaves
     mapping (uint256 => uint256) public numStateLeaves;
 
@@ -97,7 +100,6 @@ contract MACI is IMACI, DomainObjs, Params, SnarkCommon, Ownable {
     event SignUp(
         uint256 _stateIndex,
         PubKey _userPubKey,
-        uint256 _voiceCreditBalance,
         uint256 _timestamp
     );
 
@@ -182,14 +184,10 @@ contract MACI is IMACI, DomainObjs, Params, SnarkCommon, Ownable {
      *     register() function. For instance, the POAPGatekeeper or
      *     SignUpTokenGatekeeper requires this value to be the ABI-encoded
      *     token ID.
-     * @param _initialVoiceCreditProxyData Data to pass to the
-     *     InitialVoiceCreditProxy, which allows it to determine how many voice
-     *     credits this user should have.
      */
     function signUp(
         PubKey memory _pubKey,
-        bytes memory _signUpGatekeeperData,
-        bytes memory _initialVoiceCreditProxyData
+        bytes memory _signUpGatekeeperData
     ) public afterInit {
 
         // The circuits only support up to (5 ** 10 - 1) signups
@@ -207,32 +205,18 @@ contract MACI is IMACI, DomainObjs, Params, SnarkCommon, Ownable {
             "MACI: _pubKey values should be less than the snark scalar field"
         );
 
-        // Get the user's voice credit balance.
-        uint256 voiceCreditBalance = initialVoiceCreditProxy.getVoiceCredits(
-            msg.sender,
-            _initialVoiceCreditProxyData
-        );
-
-        // The limit on voice credits is 2 ^ 32 which is hardcoded into the
-        // MessageValidator circuit, specifically at check that there are
-        // sufficient voice credits (using GreaterEqThan(32)).
-        // TODO: perhaps increase this to 2 ^ 50 = 1125899906842624?
-        require(
-            voiceCreditBalance <= 4294967296,
-            "MACI: too many voice credits"
-        );
-
         uint256 timestamp = block.timestamp;
         // Create a state leaf and enqueue it.
         uint256 stateLeaf = hashStateLeaf(
-            StateLeaf(_pubKey, voiceCreditBalance, timestamp)
+            StateLeaf(_pubKey, timestamp)
         );
         uint256 stateIndex = stateAq.enqueue(stateLeaf);
 
         // Increment the number of signups
         numSignUps ++;
+        stateIndexes[msg.sender] = stateIndex;
 
-        emit SignUp(stateIndex, _pubKey, voiceCreditBalance, timestamp);
+        emit SignUp(stateIndex, _pubKey, timestamp);
     }
 
     //function signUpViaRelayer(
