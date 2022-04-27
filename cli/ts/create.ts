@@ -69,12 +69,6 @@ const create = async (args: any) => {
     // Initial voice credit proxy contract 
     const initialVoiceCreditProxy = args.initial_vc_proxy
 
-    // Whether we should deploy a ConstantInitialVoiceCreditProxy
-    if (initialVoiceCreditProxy != undefined && initialVoiceCredits != undefined) {
-        console.error('Error: only one of the following can be specified: the initial voice credit proxy or the amount of initial voice credits.')
-        return 1
-    }
-
     let initialVoiceCreditProxyContractAddress
     if (initialVoiceCreditProxy == undefined) {
         // Deploy a ConstantInitialVoiceCreditProxy contract
