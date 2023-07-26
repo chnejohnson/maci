@@ -1,12 +1,9 @@
 version: "3.9"
 services:
   maci:
-    build:
-      context: ./
+    image: chnejohnson/maci:v0.10.1
+    working_dir: /maci
     volumes:
-      - type: bind
-        target: /params
-        source: ./circuits/params/
-
-volumes:
-  zkeys:
+      - ./circuits/params:/maci/circuits/params
+      - ./zkeys:/maci/cli/zkeys
+      - ./proofs:/maci/cli/proofs
